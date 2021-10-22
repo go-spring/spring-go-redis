@@ -18,9 +18,10 @@ package SpringGoRedis
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	g "github.com/go-redis/redis/v8"
-	"github.com/go-spring/spring-base/cast"
 	"github.com/go-spring/spring-core/redis"
 )
 
@@ -37,21 +38,116 @@ func NewClient(clt *g.Client) redis.Client {
 
 func (c *client) do(ctx context.Context, args ...interface{}) (redis.Reply, error) {
 	cmd := c.client.Do(ctx, args...)
-	result, err := cmd.Result()
+	_, err := cmd.Result()
 	if err != nil {
+		if err == g.Nil {
+			return nil, redis.ErrNil
+		}
 		return nil, err
 	}
-	return &reply{v: result}, nil
+	return &reply{cmd: cmd}, nil
 }
 
 type reply struct {
-	v interface{}
+	cmd *g.Cmd
 }
 
-func (r *reply) String() string {
-	return cast.ToString(r.v)
+func (r *reply) Bool() (bool, error) {
+	switch v := r.cmd.Val().(type) {
+	case int64:
+		return v == 1, nil
+	case string:
+		return v == "OK", nil
+	default:
+		return false, fmt.Errorf("redis: unexpected type %T for bool", v)
+	}
 }
 
-func (r *reply) Int64() int64 {
-	return cast.ToInt64(r.v)
+func (r *reply) Int64() (int64, error) {
+	return r.cmd.Int64()
+}
+
+func (r *reply) Float64() (float64, error) {
+	return r.cmd.Float64()
+}
+
+func (r *reply) String() (string, error) {
+	return r.cmd.Text()
+}
+
+func (r *reply) Slice() ([]interface{}, error) {
+	return r.cmd.Slice()
+}
+
+func (r *reply) BoolSlice() ([]bool, error) {
+	return r.cmd.BoolSlice()
+}
+
+func (r *reply) Int64Slice() ([]int64, error) {
+	return r.cmd.Int64Slice()
+}
+
+func (r *reply) Float64Slice() ([]float64, error) {
+
+	slice, err := r.cmd.Slice()
+	if err != nil {
+		return nil, err
+	}
+
+	val := make([]float64, len(slice))
+	for i := range slice {
+		val[i], err = toFloat64(slice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return val, nil
+}
+
+func toFloat64(val interface{}) (float64, error) {
+	switch val := val.(type) {
+	case nil:
+		return 0, nil
+	case int64:
+		return float64(val), nil
+	case string:
+		return strconv.ParseFloat(val, 64)
+	default:
+		err := fmt.Errorf("redis: unexpected type %T for Float64", val)
+		return 0, err
+	}
+}
+
+func (r *reply) StringSlice() ([]string, error) {
+	return r.cmd.StringSlice()
+}
+
+func (r *reply) ZItemSlice() ([]redis.ZItem, error) {
+	slice, err := r.cmd.StringSlice()
+	if err != nil {
+		return nil, err
+	}
+	val := make([]redis.ZItem, len(slice)/2)
+	for i := 0; i < len(val); i++ {
+		idx := i * 2
+		member := slice[idx]
+		score, err := strconv.ParseFloat(slice[idx+1], 64)
+		if err != nil {
+			return nil, err
+		}
+		val[i] = redis.ZItem{Score: score, Member: member}
+	}
+	return val, nil
+}
+
+func (r *reply) StringMap() (map[string]string, error) {
+	slice, err := r.cmd.StringSlice()
+	if err != nil {
+		return nil, err
+	}
+	val := make(map[string]string, len(slice)/2)
+	for i := 0; i < len(slice); i += 2 {
+		val[slice[i]] = slice[i+1]
+	}
+	return val, nil
 }

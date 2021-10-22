@@ -14,56 +14,20 @@
  * limitations under the License.
  */
 
-package SpringGoRedis_test
+package testcases
 
 import (
 	"context"
 	"testing"
 
 	g "github.com/go-redis/redis/v8"
-	"github.com/go-spring/spring-base/assert"
 	"github.com/go-spring/spring-core/redis"
 	SpringGoRedis "github.com/go-spring/spring-go-redis"
 )
 
-func getClient() redis.Client {
-	return SpringGoRedis.NewClient(g.NewClient(&g.Options{}))
-}
-
-func TestString(t *testing.T) {
-
-	c := getClient()
-	var reply interface{}
+func RunCase(t *testing.T, fn func(t *testing.T, ctx context.Context, c redis.Client)) {
+	c := SpringGoRedis.NewClient(g.NewClient(&g.Options{}))
 	ctx := context.Background()
-
-	reply, err := c.Set(ctx, "name", "king", 0)
-	if err != nil {
-		t.Fatal()
-	}
-	assert.Equal(t, reply, "OK")
-
-	reply, err = c.Get(ctx, "name")
-	if err != nil {
-		t.Fatal()
-	}
-	assert.Equal(t, reply, "king")
-}
-
-func TestHash(t *testing.T) {
-
-	c := getClient()
-	var reply interface{}
-	ctx := context.Background()
-
-	reply, err := c.HSet(ctx, "hash", "name", "king")
-	if err != nil {
-		t.Fatal()
-	}
-	assert.Equal(t, reply, int64(0))
-
-	reply, err = c.HGet(ctx, "hash", "name")
-	if err != nil {
-		t.Fatal()
-	}
-	assert.Equal(t, reply, "king")
+	defer c.FlushAll(ctx)
+	fn(t, ctx, c)
 }

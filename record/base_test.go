@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package testcases
+package record
 
 import (
-	"context"
 	"testing"
 
 	g "github.com/go-redis/redis/v8"
@@ -25,9 +24,6 @@ import (
 	SpringGoRedis "github.com/go-spring/spring-go-redis"
 )
 
-func RunCase(t *testing.T, fn func(t *testing.T, ctx context.Context, c redis.Client)) {
-	c := SpringGoRedis.NewClient(g.NewClient(&g.Options{}))
-	ctx := context.Background()
-	defer c.FlushAll(ctx)
-	fn(t, ctx, c)
+func RunCase(t *testing.T, fn func(t *testing.T, c redis.Client)) {
+	fn(t, SpringGoRedis.NewClient(g.NewClient(&g.Options{})))
 }

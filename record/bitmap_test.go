@@ -14,30 +14,30 @@
  * limitations under the License.
  */
 
-package testcases
+package record
 
 import (
 	"testing"
 
-	"github.com/go-spring/spring-core/redis/testcases"
+	"github.com/go-spring/spring-core/redis/record"
 )
 
 func TestBitCount(t *testing.T) {
-	RunCase(t, testcases.BitCount)
+	RunCase(t, record.BitCount)
 }
 
 func TestBitOpAnd(t *testing.T) {
-	RunCase(t, testcases.BitOpAnd)
+	RunCase(t, record.BitOpAnd)
 }
 
 func TestBitPos(t *testing.T) {
-	RunCase(t, testcases.BitPos)
+	RunCase(t, record.BitPos)
 }
 
 func TestGetBit(t *testing.T) {
-	RunCase(t, testcases.GetBit)
+	RunCase(t, record.GetBit)
 }
 
 func TestSetBit(t *testing.T) {
-	RunCase(t, testcases.SetBit)
+	RunCase(t, record.SetBit)
 }
